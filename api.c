@@ -15,7 +15,7 @@
 static SYSCALL_INFO_TABLE SyscallInfoTable;
 
 
-extern VOID SyscallPrepare(WORD wSsn);
+extern VOID SyscallPrepare(WORD wSsn, PVOID pSyscallRet);
 extern SyscallExec();
 
 
