@@ -44,10 +44,6 @@ static unsigned char key[] = {
 };
 
 
-extern VOID SyscallPrepare(WORD wSystemCall);
-extern SyscallExec();
-
-
 INT wmain()
 {
 	HANDLE hThread;
