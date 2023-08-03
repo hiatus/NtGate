@@ -9,3 +9,7 @@ main.c.
 - NtProtectVirtualMemory
 - NtCreateThreadEx
 - NtWaitForSingleObject
+
+## References
+- [HellsGate](https://github.com/am0nsec/HellsGate) by [@am0nsec](https://github.com/am0nsec) and @RtlMateusz.
+- [HalosGate](https://blog.sektor7.net/#!res/2021/halosgate.md) by Reenz0h from Sektor7.
