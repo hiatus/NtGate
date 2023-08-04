@@ -6,11 +6,11 @@ main.c.
 
 ## Included Nt* Functions
 - NtAllocateVirtualMemory
-- NtCreateProcessEx;
-- NtCreateThreadEx;
-- NtOpenProcess;
-- NtProtectVirtualMemory;
-- NtQueueApcThreadEx;
-- NtResumeThread;
-- NtWaitForSingleObject;
-- NtWriteVirtualMemory;
+- NtCreateProcessEx
+- NtCreateThreadEx
+- NtOpenProcess
+- NtProtectVirtualMemory
+- NtQueueApcThreadEx
+- NtResumeThread
+- NtWaitForSingleObject
+- NtWriteVirtualMemory
