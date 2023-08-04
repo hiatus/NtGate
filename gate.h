@@ -335,7 +335,15 @@ typedef struct _INITIAL_TEB {
 	PVOID                StackReserved;
 } INITIAL_TEB, * PINITIAL_TEB;
 
-typedef struct {
+typedef union _USER_APC_OPTION {
+	ULONG_PTR UserApcFlags;
+	HANDLE MemoryReserveHandle;
+} USER_APC_OPTION, * PUSER_APC_OPTION;
+
+typedef VOID (*PPS_APC_ROUTINE)(PVOID SystemArgument1, PVOID SystemArgument2, PVOID SystemArgument3, PCONTEXT ContextRecord);
+
+// Local defs
+typedef struct _SYSCALL_INFO {
 	DWORD dwSsn;
 	PVOID pAddress;
 	PVOID pSyscallRet;
