@@ -11,6 +11,7 @@ development. A basic NtCreateThreadEx PoC is included in main.c.
 - NtCreateThreadEx
 - NtOpenProcess
 - NtProtectVirtualMemory
+- NtQueryInformationProcess
 - NtQueueApcThreadEx
 - NtReadVirtualMemory
 - NtResumeThread

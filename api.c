@@ -164,6 +164,21 @@ BOOL InitApi(VOID)
 	);
 #endif
 
+	if (InitSyscallInfo(&SyscallInfoTable.NtQueryInformationProcess, pLdrDataEntry->DllBase, pImageExportDirectory, 0xd902864579da8171) < 0)
+		return FALSE;
+
+#ifdef DEBUG
+	printf(
+		"\n"
+		"0x%p = &SyscallInfoTable.NtQueryInformationProcess\n"
+		"\t.dwSsn       = 0x%02x\n"
+		"\t.pAddress    = 0x%p\n"
+		"\t.pSyscallRet = 0x%p\n\n",
+		&SyscallInfoTable.NtQueryInformationProcess, SyscallInfoTable.NtQueryInformationProcess.dwSsn,
+		SyscallInfoTable.NtQueryInformationProcess.pAddress, SyscallInfoTable.NtQueryInformationProcess.pSyscallRet
+	);
+#endif
+
 	if (InitSyscallInfo(&SyscallInfoTable.NtQueueApcThreadEx, pLdrDataEntry->DllBase, pImageExportDirectory, 0x5d25d3cc80a44184) < 0)
 		return FALSE;
 
@@ -276,6 +291,12 @@ NTSTATUS NtProtectVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID* BaseAd
 {
 	SyscallPrepare(SyscallInfoTable.NtProtectVirtualMemory.dwSsn, SyscallInfoTable.NtProtectVirtualMemory.pSyscallRet);
 	return SyscallExec(ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
+}
+
+NTSTATUS NtQueryInformationProcess(_In_ HANDLE ProcessHandle, _In_ PROCESS_INFORMATION_CLASS ProcessInformationClass, _Out_ PVOID ProcessInformation, _In_ ULONG ProcessInformationLength, _Out_ PULONG ReturnLength)
+{
+	SyscallPrepare(SyscallInfoTable.NtProtectVirtualMemory.dwSsn, SyscallInfoTable.NtProtectVirtualMemory.pSyscallRet);
+	return SyscallExec(ProcessHandle, ProcessInformationClass, ProcessInformation, ProcessInformationLength, ReturnLength);
 }
 
 NTSTATUS NtQueueApcThreadEx(_In_ HANDLE ThreadHandle, _In_ HANDLE UserApcReserveHandle, _In_ PPS_APC_ROUTINE ApcRoutine, _In_opt_ PVOID SystemArgument1, _In_opt_ PVOID SystemArgument2, _In_opt_ PVOID SystemArgument3)
