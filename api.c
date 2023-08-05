@@ -74,6 +74,21 @@ BOOL InitApi(VOID)
 	printf("0x%p = pImageExportDirectory\n", pImageExportDirectory);
 #endif
 
+	if (InitSyscallInfo(&SyscallInfoTable.NtAllocateReserveObject, pLdrDataEntry->DllBase, pImageExportDirectory, 0x965bca26b5a701ae) < 0)
+		return FALSE;
+
+#ifdef DEBUG
+	printf(
+		"\n"
+		"0x%p = &SyscallInfoTable.NtAllocateReserveObject\n"
+		"\t.dwSsn       = 0x%02x\n"
+		"\t.pAddress    = 0x%p\n"
+		"\t.pSyscallRet = 0x%p\n\n",
+		&SyscallInfoTable.NtAllocateReserveObject, SyscallInfoTable.NtAllocateReserveObject.dwSsn,
+		SyscallInfoTable.NtAllocateReserveObject.pAddress, SyscallInfoTable.NtAllocateReserveObject.pSyscallRet
+	);
+#endif
+
 	if (InitSyscallInfo(&SyscallInfoTable.NtAllocateVirtualMemory, pLdrDataEntry->DllBase, pImageExportDirectory, 0xf5bd373480a6b89b) < 0)
 		return FALSE;
 
@@ -164,6 +179,21 @@ BOOL InitApi(VOID)
 	);
 #endif
 
+	if (InitSyscallInfo(&SyscallInfoTable.NtReadVirtualMemory, pLdrDataEntry->DllBase, pImageExportDirectory, 0x3a501544bfe708b2) < 0)
+		return FALSE;
+
+#ifdef DEBUG
+	printf(
+		"\n"
+		"0x%p = &SyscallInfoTable.NtReadVirtualMemory\n"
+		"\t.dwSsn       = 0x%02x\n"
+		"\t.pAddress    = 0x%p\n"
+		"\t.pSyscallRet = 0x%p\n\n",
+		&SyscallInfoTable.NtReadVirtualMemory, SyscallInfoTable.NtReadVirtualMemory.dwSsn,
+		SyscallInfoTable.NtReadVirtualMemory.pAddress, SyscallInfoTable.NtReadVirtualMemory.pSyscallRet
+	);
+#endif
+
 	if (InitSyscallInfo(&SyscallInfoTable.NtResumeThread, pLdrDataEntry->DllBase, pImageExportDirectory, 0xa5073bcb80d0459f) < 0)
 		return FALSE;
 
@@ -212,6 +242,12 @@ BOOL InitApi(VOID)
 	return TRUE;
 }
 
+NTSTATUS NtAllocateReserveObject(_Out_ PHANDLE MemoryReserveHandle, _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes, _In_ MEMORY_RESERVE_OBJECT_TYPE ObjectType)
+{
+	SyscallPrepare(SyscallInfoTable.NtAllocateReserveObject.dwSsn, SyscallInfoTable.NtAllocateReserveObject.pSyscallRet);
+	return SyscallExec(MemoryReserveHandle, ObjectAttributes, ObjectType);
+}
+
 NTSTATUS NtAllocateVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID* BaseAddress, _In_ ULONG_PTR ZeroBits, _Inout_ PSIZE_T RegionSize, _In_ ULONG AllocationType, _In_ ULONG Protect)
 {
 	SyscallPrepare(SyscallInfoTable.NtAllocateVirtualMemory.dwSsn, SyscallInfoTable.NtAllocateVirtualMemory.pSyscallRet);
@@ -242,10 +278,16 @@ NTSTATUS NtProtectVirtualMemory(_In_ HANDLE ProcessHandle, _Inout_ PVOID* BaseAd
 	return SyscallExec(ProcessHandle, BaseAddress, NumberOfBytesToProtect, NewAccessProtection, OldAccessProtection);
 }
 
-NTSTATUS NtQueueApcThreadEx(_In_ HANDLE ThreadHandle, _In_ USER_APC_OPTION UserApcOption, _In_ PPS_APC_ROUTINE ApcRoutine, _In_opt_ PVOID SystemArgument1, _In_opt_ PVOID SystemArgument2, _In_opt_ PVOID SystemArgument3)
+NTSTATUS NtQueueApcThreadEx(_In_ HANDLE ThreadHandle, _In_ HANDLE UserApcReserveHandle, _In_ PPS_APC_ROUTINE ApcRoutine, _In_opt_ PVOID SystemArgument1, _In_opt_ PVOID SystemArgument2, _In_opt_ PVOID SystemArgument3)
 {
 	SyscallPrepare(SyscallInfoTable.NtQueueApcThreadEx.dwSsn, SyscallInfoTable.NtQueueApcThreadEx.pSyscallRet);
-	return (ThreadHandle, UserApcOption, ApcRoutine, SystemArgument1, SystemArgument2, SystemArgument3);
+	return SyscallExec(ThreadHandle, UserApcReserveHandle, ApcRoutine, SystemArgument1, SystemArgument2, SystemArgument3);
+}
+
+NTSTATUS NtReadVirtualMemory(_In_ HANDLE ProcessHandle, _In_ PVOID BaseAddress, _Out_ PVOID Buffer, _In_ ULONG NumberOfBytesToRead, _Out_opt_ PULONG NumberOfBytesReaded)
+{
+	SyscallPrepare(SyscallInfoTable.NtResumeThread.dwSsn, SyscallInfoTable.NtResumeThread.pSyscallRet);
+	return SyscallExec(ProcessHandle, BaseAddress, Buffer, NumberOfBytesToRead, NumberOfBytesReaded);
 }
 
 NTSTATUS NtResumeThread(_In_ HANDLE ThreadHandle, _Out_opt_ PULONG SuspendCount)

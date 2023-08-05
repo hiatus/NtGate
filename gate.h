@@ -335,10 +335,29 @@ typedef struct _INITIAL_TEB {
 	PVOID                StackReserved;
 } INITIAL_TEB, * PINITIAL_TEB;
 
+/*
+#ifndef _QUEUE_USER_APC_FLAGS
+typedef enum _QUEUE_USER_APC_FLAGS {
+	QueueUserApcFlagsNone,
+	QueueUserApcFlagsSpecialUserApc,
+	QueueUserApcFlagsMaxValue
+} QUEUE_USER_APC_FLAGS;
+#endif
+*/
+
+#ifndef _USER_APC_OPTION
 typedef union _USER_APC_OPTION {
 	ULONG_PTR UserApcFlags;
 	HANDLE MemoryReserveHandle;
 } USER_APC_OPTION, * PUSER_APC_OPTION;
+#endif
+
+#ifndef _MEMORY_RESERVE_OBJECT_TYPE
+typedef enum _MEMORY_RESERVE_OBJECT_TYPE {
+	MemoryReserveObjectTypeUserApc,
+	MemoryReserveObjectTypeIoCompletion
+} MEMORY_RESERVE_OBJECT_TYPE, PMEMORY_RESERVE_OBJECT_TYPE;
+#endif
 
 typedef VOID (*PPS_APC_ROUTINE)(PVOID SystemArgument1, PVOID SystemArgument2, PVOID SystemArgument3, PCONTEXT ContextRecord);
 

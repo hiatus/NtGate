@@ -5,12 +5,14 @@ internals to provide a transparent interface to some commonly used NTAPI functio
 main.c.
 
 ## Included Nt* Functions
+- NtAllocateReserveObject
 - NtAllocateVirtualMemory
 - NtCreateProcessEx
 - NtCreateThreadEx
 - NtOpenProcess
 - NtProtectVirtualMemory
 - NtQueueApcThreadEx
+- NtReadVirtualMemory
 - NtResumeThread
 - NtWaitForSingleObject
 - NtWriteVirtualMemory
