@@ -1,7 +1,7 @@
 # NtGate
 Transparently call Nt* API functions using Halo's Gate and indirect syscalls. This code builds
 around the original Hell's Gate implementation and it's successors and aims to abstract away it's
-internals to provide a transparent interface to some NTAPI functions commonly used suring malware
+internals to provide a transparent interface to some NTAPI functions commonly used during malware
 development. A basic NtCreateThreadEx PoC is included in main.c.
 
 ## Included Nt* Functions
