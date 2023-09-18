@@ -76,7 +76,7 @@ DWORD InitSyscallInfo(_Out_ PSYSCALL_INFO pSyscallInfo, _In_ PVOID pModuleBase, 
 				low = *((PBYTE)pAddress + 4 + idx * NEXT);
 
 				pSyscallInfo->pAddress = pAddress;
-				pSyscallInfo->dwSsn = (high << 8) | low;
+				pSyscallInfo->dwSsn = (high << 8) | low - idx;
 
 				break;
 			}
@@ -89,7 +89,7 @@ DWORD InitSyscallInfo(_Out_ PSYSCALL_INFO pSyscallInfo, _In_ PVOID pModuleBase, 
 				low = *((PBYTE)pAddress + 4 + idx * PREV);
 
 				pSyscallInfo->pAddress = pAddress;
-				pSyscallInfo->dwSsn = (high << 8) | low;
+				pSyscallInfo->dwSsn = (high << 8) | low + idx;
 
 				break;
 			}
