@@ -41,7 +41,7 @@ DWORD InitSyscallInfo(_Out_ PSYSCALL_INFO pSyscallInfo, _In_ PVOID pModuleBase, 
 			continue;
 
 		/*
-			Handle non-hooked APIs
+			Handle non-hooked functions
 
 			mov r10, rcx
 			mov rax, <ssn>
@@ -59,11 +59,14 @@ DWORD InitSyscallInfo(_Out_ PSYSCALL_INFO pSyscallInfo, _In_ PVOID pModuleBase, 
 		}
 
 		/*
-			Handle hooked APIs
+			Handle hooked functions
 
 			jmp <edr.dll>
+			; or
+			mov r10, rcx
+			jmp <edr.dll>
 		*/
-		if (*((PBYTE)pAddress) != 0xe9)
+		if (*((PBYTE)pAddress) != 0xe9 && *((PBYTE)pAddress + 3) != 0xe9)
 			continue;
 
 		// Derive SSN from neighbour syscalls
