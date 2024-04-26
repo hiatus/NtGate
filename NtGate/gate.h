@@ -359,7 +359,7 @@ typedef enum _MEMORY_RESERVE_OBJECT_TYPE {
 } MEMORY_RESERVE_OBJECT_TYPE, PMEMORY_RESERVE_OBJECT_TYPE;
 #endif
 
-typedef VOID(*PPS_APC_ROUTINE)(PVOID SystemArgument1, PVOID SystemArgument2, PVOID SystemArgument3, PCONTEXT ContextRecord);
+typedef VOID (*PPS_APC_ROUTINE)(PVOID SystemArgument1, PVOID SystemArgument2, PVOID SystemArgument3, PCONTEXT ContextRecord);
 
 // Local defs
 typedef struct _SYSCALL_INFO {

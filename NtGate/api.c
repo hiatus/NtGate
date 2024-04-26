@@ -35,7 +35,7 @@ static BOOL GetImageExportDirectory(PVOID pModuleBase, PIMAGE_EXPORT_DIRECTORY* 
 
 	*ppImageExportDirectory = (PIMAGE_EXPORT_DIRECTORY)(
 		(PBYTE)pModuleBase + pImageNtHeaders->OptionalHeader.DataDirectory[0].VirtualAddress
-		);
+	);
 
 	return TRUE;
 }
